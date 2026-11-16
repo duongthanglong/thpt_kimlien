@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giám sát học tập – Trường THPT Kim Liên</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+  <script src="js/config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">KL</div>
+      <div>
+        <div class="school">TRƯỜNG THPT KIM LIÊN</div>
+        <div class="appname">Ứng dụng giám sát học tập</div>
+      </div>
+    </div>
+    <div id="userBox" class="userbox hidden">
+      <div class="who"><span id="userName"></span><small id="userClass"></small></div>
+      <span id="pendingBadge" class="badge zero" title="Số ảnh đang chờ gửi">0</span>
+      <button id="btnLogout" class="btn ghost">Đăng xuất</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Đăng nhập -->
+    <section id="viewLogin" class="login-wrap hidden">
+      <div class="login-intro">
+        <h1>Chào mừng các em học sinh</h1>
+        <p>Ứng dụng hỗ trợ giáo viên theo dõi trạng thái học tập qua biểu cảm khuôn mặt trong giờ học trực tuyến và tự học.</p>
+        <ul class="features">
+          <li><b>Giám sát học tập</b> – nhận dạng biểu cảm ngay trên máy của em, chỉ lưu kết quả tổng hợp mỗi buổi.</li>
+          <li><b>Thu thập dữ liệu</b> – đóng góp ảnh có gán nhãn để cải thiện mô hình.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Đăng nhập</h2>
+        <form id="loginForm">
+          <label>Mã học sinh <input id="loginUser" required autocomplete="username" placeholder="VD: KL10A1001"></label>
+          <label>Mật khẩu <input id="loginPass" type="password" required autocomplete="current-password"></label>
+          <button class="btn primary block" type="submit">Đăng nhập</button>
+          <p id="loginMsg" class="msg"></p>
+        </form>
+        <p class="hint">Chưa có tài khoản hoặc quên mật khẩu? Liên hệ giáo viên chủ nhiệm.</p>
+      </div>
+    </section>
+
+    <!-- Đồng ý tham gia -->
+    <section id="viewConsent" class="card narrow hidden">
+      <h1>Phiếu đồng ý tham gia</h1>
+      <div class="consent-text">
+        <p>Ứng dụng được sử dụng thử nghiệm tại Trường THPT Kim Liên nhằm nghiên cứu việc theo dõi trạng thái học tập qua biểu cảm khuôn mặt.</p>
+        <ul>
+          <li>Ở chức năng <b>Giám sát học tập</b>, hình ảnh camera chỉ được xử lý trên máy của em; hệ thống chỉ lưu kết quả tổng hợp (tỉ lệ trung bình của từng trạng thái trong mỗi buổi).</li>
+          <li>Ở chức năng <b>Thu thập dữ liệu</b>, ảnh vùng khuôn mặt kèm nhãn biểu cảm được lưu trên kho lưu trữ của nhóm nghiên cứu.</li>
+          <li>Dữ liệu được định danh bằng mã học sinh, chỉ dùng cho mục đích nghiên cứu và giáo dục, không công bố hình ảnh cá nhân.</li>
+          <li>Học sinh và phụ huynh có thể yêu cầu dừng tham gia và xoá toàn bộ dữ liệu bất kỳ lúc nào qua giáo viên chủ nhiệm.</li>
+        </ul>
+      </div>
+      <label class="check"><input type="checkbox" id="consentCheck"> Em đã đọc và đồng ý tham gia.</label>
+      <label class="check"><input type="checkbox" id="consentParent"> Cha/mẹ hoặc người giám hộ của em đã đồng ý cho em tham gia.</label>
+      <div class="row">
+        <button id="btnConsent" class="btn primary" disabled>Xác nhận</button>
+        <button id="btnConsentCancel" class="btn ghost">Huỷ</button>
+      </div>
+      <p id="consentMsg" class="msg"></p>
+    </section>
+
+    <!-- Màn hình chính -->
+    <section id="viewMain" class="hidden">
+      <nav class="tabs">
+        <button class="tab active" data-tab="recognize">Giám sát học tập</button>
+        <button class="tab" data-tab="collect">Thu thập dữ liệu</button>
+      </nav>
+      <div class="layout">
+        <div class="stage">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlay"></canvas>
+          <div id="stageMsg" class="stage-msg">Đang khởi động…</div>
+        </div>
+
+        <aside class="panel">
+          <div id="panelRecognize">
+            <h2>Giám sát buổi học</h2>
+            <p id="modelState" class="hint"></p>
+            <div class="row"><button id="btnRecog" class="btn primary">Bắt đầu giám sát</button></div>
+            <h3>Trạng thái hiện tại <span id="faceState" class="muted"></span></h3>
+            <div id="barsNow" class="bars"></div>
+            <h3>Tổng hợp buổi học <span id="frameCount" class="muted"></span></h3>
+            <div id="barsSession" class="bars"></div>
+            <p id="syncInfo" class="hint"></p>
+            <p class="hint">Ngồi ngay ngắn, đủ sáng, mặt nằm trong khung hình. Kết quả được tự động lưu và gửi cho giáo viên.</p>
+          </div>
+
+          <div id="panelCollect" class="hidden">
+            <h2>Chọn nhãn biểu cảm</h2>
+            <div id="labelButtons" class="label-buttons"></div>
+            <div class="row">
+              <button id="btnShot" class="btn primary">Chụp 1 ảnh</button>
+              <button id="btnBurst" class="btn">Chụp liên tiếp</button>
+            </div>
+            <p class="hint">Phím tắt: số 1–3 chọn nhãn, Space để chụp. Thể hiện đúng biểu cảm của nhãn trước khi chụp.</p>
+            <h3>Ảnh buổi này <span id="collectCount" class="muted"></span></h3>
+            <div id="thumbs" class="thumbs"></div>
+            <div class="row">
+              <button id="btnUpload" class="btn">Gửi ngay</button>
+              <button id="btnZip" class="btn ghost">Xuất ZIP ảnh chưa gửi</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">Trường THPT Kim Liên · Ứng dụng giám sát học tập (bản thử nghiệm)</footer>
+  <div id="toast" class="toast"></div>
+</body>
+</html>
