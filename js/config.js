@@ -3,7 +3,7 @@
 // =====================================================================
 window.CONFIG = {
   // URL Web App của Google Apps Script (server/Code.gs) sau khi Deploy
-  API_URL: 'https://script.google.com/macros/s/XXXX/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycby0D7GlKFkwxcldvh-pFG-eL5cR5wqPPeVwoElwjwn9Jq8zqBZtmnx-9YLHYoCu05HDIg/exec',
 
   // ---- Mô hình nhận dạng (TF.js graph model, FARNet) ----
   MODEL_URL: 'models/fer/model.json',   // kèm group1-shard1of3.bin ... shard3of3.bin cùng thư mục
